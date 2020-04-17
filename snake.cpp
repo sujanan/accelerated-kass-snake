@@ -28,6 +28,18 @@ EXTERNC void imageRead(struct image *im, const char *filename) {
     dip::ImageRead(im->dip_img, std::string(filename));
 }
 
+EXTERNC unsigned char *imageGetData(struct image *im) {
+    return (unsigned char *) im->dip_img.Data();
+}
+
+EXTERNC int imageWidth(struct image *im) {
+    return im->dip_img.Sizes()[0];
+}
+
+EXTERNC int imageHeight(struct image *im) {
+    return im->dip_img.Sizes()[1];
+}
+
 EXTERNC void imageFree(struct image *im) {
     delete im;
 }

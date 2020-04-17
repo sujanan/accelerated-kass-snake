@@ -17,6 +17,9 @@ struct image;
 EXTERNC struct image *imageNew();
 EXTERNC void imageInit(struct image *im);
 EXTERNC void imageRead(struct image *im, const char *filename);
+EXTERNC unsigned char *imageGetData(struct image *im);
+EXTERNC int imageWidth(struct image *im);
+EXTERNC int imageHeight(struct image *im);
 EXTERNC void imageFree(struct image *im);
 
 struct contour;
