@@ -8,6 +8,142 @@
 #include <raylib.h>
 
 // ========================================================
+// Common utils
+// ========================================================
+#define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
+
+static void errorLog(
+        const char *file,
+        int line, 
+        const char *fmt, 
+        ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    if (errno)
+        fprintf(stderr, "ERROR [%s %d]: (%s)\n", file, line, strerror(errno));
+    else
+        fprintf(stderr, "ERROR [%s %d]:\n", file, line);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+}
+#define ERROR_LOG(...) errorLog(__FILE__, __LINE__, __VA_ARGS__)
+
+static void die(
+        const char *file,
+        int line, 
+        const char *fmt, 
+        ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    if (errno)
+        fprintf(stderr, "Error [%s %d]: (%s)\n", file, line, strerror(errno));
+    else
+        fprintf(stderr, "Error [%s %d]:\n", file, line);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    exit(1);
+}
+#define DIE(...) die(__FILE__, __LINE__, __VA_ARGS__)
+// ========================================================
+// Data structures 
+// ========================================================
+struct vec2vec {
+    Vector2 *data;
+    int size;
+    int n;
+};
+
+#define VEC2VEC_SIZE 1024
+#define VEC2VEC_SIZE_INC 32
+
+void vec2vecInit(struct vec2vec *v, int size) {
+    v->data = malloc(sizeof(Vector2) * size);
+    if (!v->data)
+        DIE("Memory error");
+    v->size = size;
+    v->n = 0;
+}
+
+void vec2vecResize(struct vec2vec *v, int size) {
+    v->data = realloc(v->data, sizeof(Vector2) * size);
+    if (!v->data)
+        DIE("Memory error");
+    v->size = size;
+}
+
+void vec2vecSizeInc(struct vec2vec *v, int inc) {
+    vec2vecResize(v, v->size + inc);
+}
+
+void vec2vecPush(struct vec2vec *v, Vector2 e) {
+    if (v->n >= v->size)
+        vec2vecSizeInc(v, VEC2VEC_SIZE_INC);
+    v->data[v->n] = e;
+    v->n++;
+}
+
+void vec2vecRemoveAll(struct vec2vec *v) {
+    v->n = 0;
+}
+
+void vec2vecFree(struct vec2vec *v) {
+    free(v->data);
+    v->size = 0;
+    v->n = 0;
+}
+
+// ========================================================
+// Contour drawing toolbox
+// ========================================================
+
+// Pen tool
+// ========================================================
+struct pen {
+    struct vec2vec points;
+    Color col;
+};
+
+void penInit(struct pen *pen) {
+    vec2vecInit(&pen->points, VEC2VEC_SIZE);
+}
+
+void penAddPoint(struct pen *pen, Vector2 pos) {
+    vec2vecPush(&pen->points, pos);
+}
+
+void penJoinStartEnd(struct pen *pen) {
+    if (pen->points.n < 2)
+        return;
+    vec2vecPush(&pen->points, pen->points.data[0]);
+}
+
+int penHasStartEndJoined(struct pen *pen) {
+    if (pen->points.n < 3)
+        return 0;
+    Vector2 s = pen->points.data[0];
+    Vector2 e = pen->points.data[pen->points.n - 1];
+    return s.x == e.x && s.y == e.y;
+}
+
+void penDrawLineStrip(struct pen *pen) {
+    DrawLineStrip(pen->points.data, pen->points.n, RAYWHITE);
+}
+
+void penReset(struct pen *pen) {
+    vec2vecRemoveAll(&pen->points);
+}
+
+void penFree(struct pen *pen) {
+    vec2vecFree(&pen->points);
+}
+
+// Toolbox
+// ========================================================
+struct toolbox {
+    struct pen pen;
+};
+
+// ========================================================
 // Graphic utils
 // ========================================================
 static void drawBackgroundTexture(Texture2D tex, int width, int height) {
@@ -18,8 +154,20 @@ static void drawBackgroundTexture(Texture2D tex, int width, int height) {
         WHITE);
 }
 
+static void mouseInput(struct toolbox *box) {
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (penHasStartEndJoined(&box->pen))
+            penReset(&box->pen);
+        penAddPoint(&box->pen, GetMousePosition());
+    } else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+        penJoinStartEnd(&box->pen);
+        penDrawLineStrip(&box->pen);
+    }
+}
+
 static void startMainRenderLoop(
         Texture2D back,
+        struct toolbox *box,
         int width,
         int height) {
 
@@ -28,6 +176,8 @@ static void startMainRenderLoop(
         // ========================================================
         ClearBackground(RAYWHITE);
         drawBackgroundTexture(back, width, height);
+        mouseInput(box);
+        penDrawLineStrip(&box->pen);
         // ========================================================
         EndDrawing();
     }
@@ -52,11 +202,17 @@ int main(int argc, char **argv) {
     // load background texture
     Texture2D tex = LoadTextureFromImage(im);
 
+    struct toolbox box;
+    struct pen pen;
+    penInit(&pen);
+    box.pen = pen;
+
     // enter main render loop
-    startMainRenderLoop(tex, im.width, im.height);
+    startMainRenderLoop(tex, &box, im.width, im.height);
 
     // clear resources
     UnloadTexture(tex);
+    penFree(&pen);
 
     return 0;
 }
