@@ -7,6 +7,8 @@
 
 #include <raylib.h>
 
+#include "snake.h"
+
 // ========================================================
 // Common utils
 // ========================================================
@@ -117,6 +119,10 @@ void penJoinStartEnd(struct pen *pen) {
     vec2vecPush(&pen->points, pen->points.data[0]);
 }
 
+int penPointCount(struct pen *pen) {
+    return pen->points.n;
+}
+
 int penHasStartEndJoined(struct pen *pen) {
     if (pen->points.n < 3)
         return 0;
@@ -139,13 +145,26 @@ void penFree(struct pen *pen) {
 
 // Toolbox
 // ========================================================
+enum toolType {
+    TOOLBOX_PEN,
+    TOOLBOX_NONE
+};
+
 struct toolbox {
-    struct pen pen;
+    struct pen *pen;
+    enum toolType inuse;
 };
 
 // ========================================================
 // Graphic utils
 // ========================================================
+struct env {
+    struct toolbox *box;
+    struct contour *con;
+    int width;
+    int height;
+};
+
 static void drawBackgroundTexture(Texture2D tex, int width, int height) {
     DrawTexture(
         tex,
@@ -154,30 +173,42 @@ static void drawBackgroundTexture(Texture2D tex, int width, int height) {
         WHITE);
 }
 
-static void mouseInput(struct toolbox *box) {
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        if (penHasStartEndJoined(&box->pen))
-            penReset(&box->pen);
-        penAddPoint(&box->pen, GetMousePosition());
-    } else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
-        penJoinStartEnd(&box->pen);
-        penDrawLineStrip(&box->pen);
+static void mouseInput(struct env *env) {
+    struct toolbox *box = env->box;
+    switch (box->inuse) {
+        case TOOLBOX_PEN: {
+            struct pen *pen = box->pen;
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (penHasStartEndJoined(pen))
+                    penReset(pen);
+                penAddPoint(pen, GetMousePosition());
+            } else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+                penJoinStartEnd(pen);
+            break;
+        }
+        case TOOLBOX_NONE: {
+            break;
+        }
     }
 }
 
-static void startMainRenderLoop(
-        Texture2D back,
-        struct toolbox *box,
-        int width,
-        int height) {
+static void keyboardInput(struct env *env) {
+    struct toolbox *box = env->box;
+    if (IsKeyDown(KEY_P))
+        box->inuse = TOOLBOX_PEN;
+    else if (IsKeyDown(KEY_N))
+        box->inuse = TOOLBOX_NONE;
+}
 
+static void startMainRenderLoop(Texture2D back, struct env *env) {
     while (!WindowShouldClose()) {
         BeginDrawing();
         // ========================================================
         ClearBackground(RAYWHITE);
-        drawBackgroundTexture(back, width, height);
-        mouseInput(box);
-        penDrawLineStrip(&box->pen);
+        drawBackgroundTexture(back, env->width, env->height);
+        mouseInput(env);
+        keyboardInput(env);
+        penDrawLineStrip(env->box->pen);
         // ========================================================
         EndDrawing();
     }
@@ -202,17 +233,30 @@ int main(int argc, char **argv) {
     // load background texture
     Texture2D tex = LoadTextureFromImage(im);
 
-    struct toolbox box;
+    // initialize toolbox
     struct pen pen;
     penInit(&pen);
-    box.pen = pen;
+    struct toolbox box;
+    box.inuse = TOOLBOX_NONE;
+    box.pen = &pen;
+
+    // initialize contour
+    struct contour *con = contourNew();
+
+    // initialize environment
+    struct env env;
+    env.con = con;
+    env.box = &box;
+    env.width = im.width;
+    env.height = im.height;
 
     // enter main render loop
-    startMainRenderLoop(tex, &box, im.width, im.height);
+    startMainRenderLoop(tex, &env);
 
     // clear resources
     UnloadTexture(tex);
     penFree(&pen);
+    contourFree(con);
 
     return 0;
 }
