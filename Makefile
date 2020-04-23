@@ -7,8 +7,8 @@ CC_LIBS=-lraylib -lm -lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lGLEW -lGL
 
 all: main
 
-main: main.o snake.o snake.h
-	$(CXX) -o main main.o snake.o $(CXX_LIBS) $(CC_LIBS)
+main: main.o snake.o snake.h util.o
+	$(CXX) -o main main.o snake.o util.o $(CXX_LIBS) $(CC_LIBS)
 
 snake: snake.o
 	$(CXX) -o snake snake.o $(CXX_LIBS)

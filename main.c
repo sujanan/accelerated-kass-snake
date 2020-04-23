@@ -7,45 +7,9 @@
 
 #include <raylib.h>
 
+#include "util.h"
 #include "snake.h"
 
-// ========================================================
-// Common utils
-// ========================================================
-#define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
-
-static void errorLog(
-        const char *file,
-        int line, 
-        const char *fmt, 
-        ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    if (errno)
-        fprintf(stderr, "ERROR [%s %d]: (%s)\n", file, line, strerror(errno));
-    else
-        fprintf(stderr, "ERROR [%s %d]:\n", file, line);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-}
-#define ERROR_LOG(...) errorLog(__FILE__, __LINE__, __VA_ARGS__)
-
-static void die(
-        const char *file,
-        int line, 
-        const char *fmt, 
-        ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    if (errno)
-        fprintf(stderr, "Error [%s %d]: (%s)\n", file, line, strerror(errno));
-    else
-        fprintf(stderr, "Error [%s %d]:\n", file, line);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-    exit(1);
-}
-#define DIE(...) die(__FILE__, __LINE__, __VA_ARGS__)
 // ========================================================
 // Data structures 
 // ========================================================
