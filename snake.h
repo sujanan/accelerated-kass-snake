@@ -26,7 +26,7 @@ struct contour;
 
 EXTERNC struct contour *contourNew();
 EXTERNC void contourInit(struct contour *con, int size);
-EXTERNC void contourCreate(struct contour *con);
+EXTERNC void contourPush(struct contour *con, double x, double y);
 EXTERNC int contourSize(struct contour *con);
 EXTERNC void contourFree(struct contour *con);
 

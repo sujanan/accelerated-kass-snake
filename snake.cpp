@@ -55,13 +55,17 @@ EXTERNC struct contour *contourNew() {
     return new contour();
 }
 
-EXTERNC void contourInit(struct contour *con, int size = 0) {
-    // Since our contour is strict let's
-    // do nothing here. When contour becomes
-    // more flexible we'll have a correct size.
+EXTERNC void contourInit(struct contour *con, int size = 1024) {
+    con->x.resize(size);
+    con->x.resize(size);
 }
 
-EXTERNC void contourCreate(struct contour *con) {
+EXTERNC void contourPush(struct contour *con, double x, double y) {
+    con->x.push_back(x);
+    con->y.push_back(y);
+}
+
+static void contourCreate(struct contour *con) {
     con->x.resize(63);
     con->y.resize(63);
     int i = 0;
