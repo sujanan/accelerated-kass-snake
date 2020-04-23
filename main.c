@@ -214,14 +214,46 @@ static void startMainRenderLoop(Texture2D back, struct env *env) {
     }
 }
 
+static void printUsage(const char *pro_name) {
+    fprintf(stderr,
+        "Usage: %s [OPTION]... <FILE>\n" \
+        "\n"
+        "  --log [debug|info|warning|error]    Change the raylib log level\n",
+        pro_name
+    );
+}
+
 int main(int argc, char **argv) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <filename>", argv[0]);
-        return 1; 
+    const char *filename = NULL;
+
+    if (!strcmp(argv[1], "--log")) {
+        if (argc != 4) {
+            printUsage(argv[0]);
+            return 1; 
+        }
+        filename = argv[3];
+        const char *lvl = argv[2];
+        if (!strcmp(lvl, "debug"))
+            SetTraceLogLevel(LOG_DEBUG);
+        else if (!strcmp(lvl, "info"))
+            SetTraceLogLevel(LOG_INFO);
+        else if (!strcmp(lvl, "warning"))
+            SetTraceLogLevel(LOG_WARNING);
+        else if (!strcmp(lvl, "error"))
+            SetTraceLogLevel(LOG_ERROR);
+        else {
+            printUsage(argv[0]);
+            return 1;         
+        } 
+    } else {
+        if (argc != 2) {
+            printUsage(argv[0]);
+            return 1;         
+        }
+        filename = argv[1];
     }
 
     // load background image
-    const char *filename = argv[1];
     Image im = LoadImage(filename);
 
     // fix heavy CPU usage (Just don't know how yet)
@@ -242,6 +274,7 @@ int main(int argc, char **argv) {
 
     // initialize contour
     struct contour *con = contourNew();
+    contourInit(con, 1024);
 
     // initialize environment
     struct env env;
