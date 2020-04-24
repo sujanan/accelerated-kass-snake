@@ -124,10 +124,45 @@ struct toolbox {
 // ========================================================
 struct env {
     struct toolbox *box;
-    struct contour *con;
+    struct snake *snake;
     int width;
     int height;
 };
+
+void envInit(
+        struct env *env,
+        struct toolbox *box,
+        char *filename,
+        int width,
+        int height) {
+    
+    struct image *im = imageNew();
+    struct contour *con = contourNew();
+    struct energy *en = energyNew();
+    struct snake *snake = snakeNew();
+
+    imageInit(im);
+    char ics[512];
+    snprintf(ics, sizeof(ics), "%s.ics", strsep(&filename, "."));
+    imageRead(im, ics);
+    contourInit(con, 1024);
+    energyInit(en);
+    energyCalculateForce(en, im, 30.0);
+    snakeInit(snake, im, con, en, 0.001, 0.4, 100);
+
+    imageFree(im);
+    contourFree(con);
+    energyFree(en);
+
+    env->snake = snake;
+    env->box = box;
+    env->width = width;
+    env->height = height;
+}
+
+void envFree(struct env *env) {
+    snakeFree(env->snake);
+}
 
 static void drawBackgroundTexture(Texture2D tex, int width, int height) {
     DrawTexture(
@@ -188,7 +223,7 @@ static void printUsage(const char *pro_name) {
 }
 
 int main(int argc, char **argv) {
-    const char *filename = NULL;
+    char *filename = NULL;
 
     if (!strcmp(argv[1], "--log")) {
         if (argc != 4) {
@@ -220,6 +255,17 @@ int main(int argc, char **argv) {
     // load background image
     Image im = LoadImage(filename);
 
+    // initialize toolbox
+    struct pen pen;
+    penInit(&pen);
+    struct toolbox box;
+    box.inuse = TOOLBOX_NONE;
+    box.pen = &pen;
+
+    // initialize environment
+    struct env env;
+    envInit(&env, &box, filename, im.width, im.height);
+
     // fix heavy CPU usage (Just don't know how yet)
     SetConfigFlags(FLAG_VSYNC_HINT);
     
@@ -229,31 +275,13 @@ int main(int argc, char **argv) {
     // load background texture
     Texture2D tex = LoadTextureFromImage(im);
 
-    // initialize toolbox
-    struct pen pen;
-    penInit(&pen);
-    struct toolbox box;
-    box.inuse = TOOLBOX_NONE;
-    box.pen = &pen;
-
-    // initialize contour
-    struct contour *con = contourNew();
-    contourInit(con, 1024);
-
-    // initialize environment
-    struct env env;
-    env.con = con;
-    env.box = &box;
-    env.width = im.width;
-    env.height = im.height;
-
     // enter main render loop
     startMainRenderLoop(tex, &env);
 
     // clear resources
     UnloadTexture(tex);
     penFree(&pen);
-    contourFree(con);
-
+    envFree(&env);
+    CloseWindow();
     return 0;
 }
