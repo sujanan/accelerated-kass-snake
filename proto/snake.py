@@ -1,6 +1,6 @@
 import math
 import numpy as np
-import PyDIP as dip
+import diplib as dip
 import matplotlib.pyplot as plt
 
 def show_img(img):

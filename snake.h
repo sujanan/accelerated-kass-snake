@@ -38,6 +38,7 @@ EXTERNC void energyCalculateForce(
         struct energy *enptr, 
         struct image *imptr, 
         double sigma);
+EXTERNC void energyFree(struct energy *en);
 
 struct snake;
 
@@ -50,6 +51,8 @@ EXTERNC void snakeInit(
         double alpha,
         double beta,
         double gamma);
+EXTERNC void snakeSetContour(struct snake *snake, struct contour *con);
+EXTERNC struct contour *snakeGetContour(struct snake *snake);
 EXTERNC void snakeExec(struct snake *snake, int niter);
 EXTERNC void snakeFree(struct snake *snake);
 

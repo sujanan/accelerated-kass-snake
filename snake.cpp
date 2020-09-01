@@ -175,6 +175,16 @@ static void fillMatrixSnake(struct snake& snake) {
         snake.mat[i] = mat.data()[i];
 }
 
+EXTERNC void snakeSetContour(struct snake *snake, struct contour *con) {
+    int n = contourSize(con);
+    snake->mat.resize(n * n);
+    fillMatrixSnake(*snake);
+}
+
+EXTERNC struct contour *snakeGetContour(struct snake *snake) {
+    return &snake->con;
+}
+
 EXTERNC void snakeInit(
         struct snake *snake, 
         struct image *im, 
@@ -189,10 +199,7 @@ EXTERNC void snakeInit(
     snake->alpha = alpha;
     snake->beta = beta;
     snake->gamma = gamma;
-
-    int n = contourSize(con);
-    snake->mat.resize(n * n);
-    fillMatrixSnake(*snake);
+    snakeSetContour(snake, con);
 }
 
 static double getForceOnPointX(
